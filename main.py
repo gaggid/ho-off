@@ -78,7 +78,7 @@ class LeaveManagementApp:
             st.session_state['logged_in'] = False
             st.session_state['username'] = None
             st.session_state['is_admin'] = False
-            st.experimental_rerun()
+            st.rerun()  # Changed from st.experimental_rerun()
 
     def run(self):
         """Run the main application"""
@@ -96,7 +96,7 @@ class LeaveManagementApp:
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
             init_session_state()
-            st.experimental_rerun()
+            st.rerun()  # Changed from st.experimental_rerun()
 
     def show_admin_view(self):
         """Display admin dashboard"""
