@@ -70,4 +70,4 @@ STREAMLIT_THEME = {
 
 # Admin credentials
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "Passw0rd@911"  # In production, use environment variables
+ADMIN_PASSWORD = "admin@123"  # In production, use environment variables
