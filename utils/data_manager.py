@@ -57,7 +57,7 @@ class DataManager:
     def get_user(self, username: str) -> User:
         """Get user by username"""
         return self.users.get(username)
-
+    
     def load_data(self):
         """Load data from pickle files"""
         try:
