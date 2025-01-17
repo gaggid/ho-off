@@ -114,7 +114,7 @@ class UserComponent:
                     
                     # Add a refresh button
                     if st.button("Submit Another Request"):
-                        st.experimental_rerun()
+                        st.rerun()
                 else:
                     st.error("Error submitting leave request!")
 
@@ -123,7 +123,7 @@ class UserComponent:
     
     def update_dates(self):
         """Callback function to handle date changes"""
-        st.experimental_rerun()
+        st.rerun()
 
     def show_my_leaves(self):
         """Display user's leave history"""
