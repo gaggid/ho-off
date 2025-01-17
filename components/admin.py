@@ -210,19 +210,25 @@ class AdminComponent:
                     if username != st.session_state['username']]
 
         if deletable_users:
-        # Initialize session state for deletion
-            if 'user_to_delete' not in st.session_state:
-                st.session_state.user_to_delete = deletable_users[0]
-            if 'delete_confirmation' not in st.session_state:
-                st.session_state.delete_confirmation = False
-            
-            st.session_state.user_to_delete = st.selectbox(
-                "Select user to delete",
-                options=deletable_users
-            )
+        # Initialize session state variables
+            if 'delete_user_state' not in st.session_state:
+                st.session_state.delete_user_state = {
+                    'selected_user': deletable_users[0],
+                    'confirmation': False
+                }
+
+        # User selection
+        selected_user = st.selectbox(
+            "Select user to delete",
+            options=deletable_users,
+            key='user_select'
+        )
+
+        # Update selected user in session state
+        st.session_state.delete_user_state['selected_user'] = selected_user
 
         # Get user object
-        user = self.data_manager.get_user(st.session_state.user_to_delete)
+        user = self.data_manager.get_user(selected_user)
 
         # Show user details
         st.write(f"**Email:** {user.email}")
@@ -230,13 +236,13 @@ class AdminComponent:
         st.write(f"**Type:** {'Admin' if user.is_admin else 'Regular User'}")
 
         # Confirmation checkbox
-        st.session_state.delete_confirmation = st.checkbox(
+        confirmation = st.checkbox(
             "I confirm that I want to delete this user",
-            key=f"confirm_delete_{st.session_state.user_to_delete}"
+            key=f"confirm_delete_{selected_user}"
         )
 
-        if st.button("Delete User", key=f"delete_btn_{st.session_state.user_to_delete}"):
-            if st.session_state.delete_confirmation:
+        if st.button("Delete User", key=f"delete_btn_{selected_user}"):
+            if confirmation:
                 # Check if trying to delete the last admin
                 if user.is_admin:
                     admin_count = sum(1 for u in self.data_manager.users.values() if u.is_admin)
@@ -245,14 +251,16 @@ class AdminComponent:
                         return
                 
                 # Perform deletion
-                if self.data_manager.delete_user(st.session_state.user_to_delete):
-                    st.success(f"User {st.session_state.user_to_delete} deleted successfully!")
+                if self.data_manager.delete_user(selected_user):
+                    st.success(f"User {selected_user} deleted successfully!")
                     time.sleep(1)  # Add a small delay
-                    st.rerun()  # Use st.rerun() instead of st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error("Failed to delete user!")
             else:
                 st.warning("Please confirm deletion by checking the box above")
+        else:
+            st.info("No users available to delete.")
 
     def show_reports(self):
         """Generate and display various reports"""
