@@ -211,16 +211,18 @@ class AdminComponent:
 
         if deletable_users:
         # Initialize session state for deletion
+            if 'user_to_delete' not in st.session_state:
+                st.session_state.user_to_delete = deletable_users[0]
             if 'delete_confirmation' not in st.session_state:
                 st.session_state.delete_confirmation = False
-                
-            user_to_delete = st.selectbox(
+            
+            st.session_state.user_to_delete = st.selectbox(
                 "Select user to delete",
                 options=deletable_users
             )
 
         # Get user object
-        user = self.data_manager.get_user(user_to_delete)
+        user = self.data_manager.get_user(st.session_state.user_to_delete)
 
         # Show user details
         st.write(f"**Email:** {user.email}")
@@ -230,10 +232,10 @@ class AdminComponent:
         # Confirmation checkbox
         st.session_state.delete_confirmation = st.checkbox(
             "I confirm that I want to delete this user",
-            key=f"confirm_delete_{user_to_delete}"
+            key=f"confirm_delete_{st.session_state.user_to_delete}"
         )
 
-        if st.button("Delete User", key=f"delete_btn_{user_to_delete}"):
+        if st.button("Delete User", key=f"delete_btn_{st.session_state.user_to_delete}"):
             if st.session_state.delete_confirmation:
                 # Check if trying to delete the last admin
                 if user.is_admin:
@@ -243,10 +245,10 @@ class AdminComponent:
                         return
                 
                 # Perform deletion
-                if self.data_manager.delete_user(user_to_delete):
-                    st.success(f"User {user_to_delete} deleted successfully!")
+                if self.data_manager.delete_user(st.session_state.user_to_delete):
+                    st.success(f"User {st.session_state.user_to_delete} deleted successfully!")
                     time.sleep(1)  # Add a small delay
-                    st.experimental_rerun()
+                    st.rerun()  # Use st.rerun() instead of st.experimental_rerun()
                 else:
                     st.error("Failed to delete user!")
             else:
