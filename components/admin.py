@@ -211,8 +211,10 @@ class AdminComponent:
 
         if not deletable_users:
             st.info("No users available to delete.")
-        else:
-            col1, col2 = st.columns([3, 1])
+            return  # Exit the function if no users to delete
+
+        # Only proceed if there are deletable users
+        col1, col2 = st.columns([3, 1])
 
         with col1:
             selected_user = st.selectbox(
@@ -220,7 +222,8 @@ class AdminComponent:
                 options=deletable_users,
                 key="delete_user_select"
             )
-            
+
+            # Show user details in col1
             if selected_user:
                 user = self.data_manager.users[selected_user]
                 st.write(f"**Email:** {user.email}")
@@ -230,25 +233,27 @@ class AdminComponent:
         with col2:
             confirm = st.checkbox("I confirm that I want to delete this user", 
                                 key=f"confirm_delete_{selected_user}")
+
+        # Delete button in col2
+        if st.button("Delete User", key=f"delete_btn_{selected_user}"):
+            if not confirm:
+                st.warning("Please confirm deletion by checking the box above")
+                return
+
+            # Check if trying to delete the last admin
+            if user.is_admin:
+                admin_count = sum(1 for u in self.data_manager.users.values() if u.is_admin)
+                if admin_count <= 1:
+                    st.error("Cannot delete the last admin user!")
+                    return
             
-            if st.button("Delete User", key=f"delete_btn_{selected_user}"):
-                if confirm:
-                    # Check if trying to delete the last admin
-                    if user.is_admin:
-                        admin_count = sum(1 for u in self.data_manager.users.values() if u.is_admin)
-                        if admin_count <= 1:
-                            st.error("Cannot delete the last admin user!")
-                            return
-                    
-                    # Perform deletion
-                    if self.data_manager.delete_user(selected_user):
-                        st.success(f"User {selected_user} deleted successfully!")
-                        time.sleep(0.5)  # Small delay before refresh
-                        st.rerun()
-                    else:
-                        st.error("Failed to delete user!")
-                else:
-                    st.warning("Please confirm deletion by checking the box above")
+            # Perform deletion
+            if self.data_manager.delete_user(selected_user):
+                st.success(f"User {selected_user} deleted successfully!")
+                time.sleep(0.5)  # Small delay before refresh
+                st.rerun()
+            else:
+                st.error("Failed to delete user!")
 
     def show_reports(self):
         """Generate and display various reports"""
