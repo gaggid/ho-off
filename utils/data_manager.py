@@ -14,6 +14,49 @@ class DataManager:
         self.leave_requests: List[LeaveRequest] = []
         self.holidays: List[dict] = []
         self.load_data()
+    
+    def update_user(self, username: str, user_data: dict) -> bool:
+        """Update user information"""
+        if username in self.users:
+            user = self.users[username]
+            
+            # Update email if provided
+            if 'email' in user_data:
+                user.email = user_data['email']
+                
+            # Update department if provided
+            if 'department' in user_data:
+                user.department = user_data['department']
+                
+            # Update password if provided
+            if 'password' in user_data and user_data['password']:
+                user.password = user_data['password']
+                
+            # Update leave balance if provided
+            if 'leave_balance' in user_data and not user.is_admin:
+                user.leave_balance = user_data['leave_balance']
+            
+            self.save_data()
+            return True
+        return False
+
+    def delete_user(self, username: str) -> bool:
+        """Delete a user and their associated leave requests"""
+        if username in self.users:
+            # Delete user
+            del self.users[username]
+            
+            # Delete associated leave requests
+            self.leave_requests = [leave for leave in self.leave_requests 
+                                if leave.username != username]
+            
+            self.save_data()
+            return True
+        return False
+
+    def get_user(self, username: str) -> User:
+        """Get user by username"""
+        return self.users.get(username)
 
     def load_data(self):
         """Load data from pickle files"""

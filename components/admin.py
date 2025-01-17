@@ -8,6 +8,7 @@ from utils.data_manager import DataManager
 from utils.auth import hash_password
 from models.user import User
 from config import LEAVE_TYPES, DEFAULT_LEAVE_BALANCE
+import time
 
 class AdminComponent:
     def __init__(self, data_manager: DataManager):
@@ -125,6 +126,46 @@ class AdminComponent:
                             st.error("Error adding user!")
                     else:
                         st.error("Please fill all required fields!")
+         # Edit user section
+        with st.expander("Edit User"):
+            users_to_edit = [username for username in self.data_manager.users.keys()]
+            if users_to_edit:
+                selected_user = st.selectbox("Select user to edit", options=users_to_edit)
+                user = self.data_manager.users[selected_user]
+
+                with st.form("edit_user_form"):
+                    email = st.text_input("Email", value=user.email)
+                    department = st.text_input("Department", value=user.department)
+                    new_password = st.text_input("New Password (leave blank to keep current)", type="password")
+                    
+                    # Show leave balance only for non-admin users
+                    leave_balance = user.leave_balance.copy() if not user.is_admin else None
+                    if not user.is_admin:
+                        st.write("Leave Balance")
+                        cols = st.columns(len(DEFAULT_LEAVE_BALANCE))
+                        for i, leave_type in enumerate(DEFAULT_LEAVE_BALANCE.keys()):
+                            with cols[i]:
+                                leave_balance[leave_type] = st.number_input(
+                                    leave_type,
+                                    min_value=0,
+                                    value=user.leave_balance.get(leave_type, 0)
+                                )
+
+                    if st.form_submit_button("Update User"):
+                        # Update user information
+                        user.email = email
+                        user.department = department
+                        if new_password:
+                            user.password = hash_password(new_password)
+                        if leave_balance:
+                            user.leave_balance = leave_balance
+
+                        self.data_manager.users[selected_user] = user
+                        self.data_manager.save_data()
+                        st.success("User updated successfully!")
+                        st.experimental_rerun()
+            else:
+                st.info("No users to edit.")
 
         # User list and management
         st.subheader("Existing Users")
@@ -165,33 +206,51 @@ class AdminComponent:
 
         # User deletion
         st.write("### Delete User")
-        # Get all usernames except the current admin
         deletable_users = [username for username, user in self.data_manager.users.items() 
-                        if username != st.session_state['username']]
+                    if username != st.session_state['username']]
 
         if deletable_users:
+        # Initialize session state for deletion
+            if 'delete_confirmation' not in st.session_state:
+                st.session_state.delete_confirmation = False
+                
             user_to_delete = st.selectbox(
                 "Select user to delete",
                 options=deletable_users
             )
-            
-            if st.button("Delete User"):
-                # Add confirmation checkbox
-                confirm = st.checkbox("I confirm that I want to delete this user")
-                if confirm:
-                    # Check if trying to delete the last admin
-                    if self.data_manager.users[user_to_delete].is_admin:
-                        admin_count = sum(1 for user in self.data_manager.users.values() if user.is_admin)
-                        if admin_count <= 1:
-                            st.error("Cannot delete the last admin user!")
-                            return
 
-                    del self.data_manager.users[user_to_delete]
-                    self.data_manager.save_data()
-                    st.success(f"User {user_to_delete} deleted!")
+        # Get user object
+        user = self.data_manager.get_user(user_to_delete)
+
+        # Show user details
+        st.write(f"**Email:** {user.email}")
+        st.write(f"**Department:** {user.department}")
+        st.write(f"**Type:** {'Admin' if user.is_admin else 'Regular User'}")
+
+        # Confirmation checkbox
+        st.session_state.delete_confirmation = st.checkbox(
+            "I confirm that I want to delete this user",
+            key=f"confirm_delete_{user_to_delete}"
+        )
+
+        if st.button("Delete User", key=f"delete_btn_{user_to_delete}"):
+            if st.session_state.delete_confirmation:
+                # Check if trying to delete the last admin
+                if user.is_admin:
+                    admin_count = sum(1 for u in self.data_manager.users.values() if u.is_admin)
+                    if admin_count <= 1:
+                        st.error("Cannot delete the last admin user!")
+                        return
+                
+                # Perform deletion
+                if self.data_manager.delete_user(user_to_delete):
+                    st.success(f"User {user_to_delete} deleted successfully!")
+                    time.sleep(1)  # Add a small delay
                     st.experimental_rerun()
-                elif st.button("Delete", type="primary"):
-                    st.warning("Please confirm deletion by checking the box above")
+                else:
+                    st.error("Failed to delete user!")
+            else:
+                st.warning("Please confirm deletion by checking the box above")
 
     def show_reports(self):
         """Generate and display various reports"""
