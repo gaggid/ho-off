@@ -38,8 +38,7 @@ class UserComponent:
                 value=min_date if 'leave_start_date' not in st.session_state else st.session_state.leave_start_date,
                 min_value=min_date,
                 max_value=max_date,
-                key='start_date_input',
-                on_change=self.update_dates
+                key='start_date_input'  # Remove the on_change parameter
             )
 
         with col2:
@@ -48,8 +47,7 @@ class UserComponent:
                 value=max(start_date, min_date if 'leave_end_date' not in st.session_state else st.session_state.leave_end_date),
                 min_value=start_date,
                 max_value=max_date,
-                key='end_date_input',
-                on_change=self.update_dates
+                key='end_date_input'  # Remove the on_change parameter
             )
 
         # Update session state
